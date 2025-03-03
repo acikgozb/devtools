@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+program="power"
+
+menu_items="Log out\nRestart\nKill"
+selection=$(echo -e "$menu_items" | rofi -dmenu -i)
+
+case "$selection" in
+    "Log out")
+        loginctl terminate-user "$USER"
+        ;;
+    "Restart")
+        systemctl reboot
+        ;;
+    "Kill")
+        systemctl poweroff
+        ;;
+    *)
+        echo "$program: invalid option: $selection"
+        exit 0
+esac
