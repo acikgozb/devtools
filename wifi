@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+program="rw-wifi"
+
+cmd_turn_off_wifi="Turn off WiFi"
+cmd_turn_on_wifi="Turn on WiFi"
+cmd_scan="Connect to a network"
+cmd_exit="exit"
+
+
+connect() {
+    rofi -e "Connecting..." &
+    conn_pid=$!
+    echo "$1"
+    echo "$conn_pid"
+
+    if grep -q -e "^${1}$" <(nmcli -g NAME connection 2> /dev/null); then
+        kill "$conn_pid"
+
+        rofi -e "Connecting to a known network..." &
+        known_conn_pid=$!
+
+        if nmcli connection up id "$1"; then
+            kill "$known_conn_pid"
+            return 0
+        fi
+    fi
+
+    kill "$conn_pid"
+
+    password=$(rofi -dmenu -p "password:")
+
+    rofi -e "Connecting to a new network..." &
+    new_conn_pid=$!
+
+    if ! nmcli device wifi connect "$1" password "$password"; then
+        echo "$program: could not connect to the network $1"
+    fi
+
+    kill "$new_conn_pid"
+    return 0
+}
+
+scan() {
+    rofi -e "Scanning available networks..." &
+    placeholder_pid=$!
+
+    scan_res=$(nmcli dev wifi list)
+    {
+        available_networks=()
+
+        # First line contains headers.
+        read -r
+
+        curr_network=0
+        while read -r line; do
+            if grep -q "\--" <<< "$line"; then
+                continue
+            fi
+
+            if grep -q "\*" <<< "$line"; then
+                curr_network=1
+                read -r line <<< "${line/\*/ }"
+            fi
+
+            network_name=$(tr -s ' ' <<< "$line" | cut -d' ' -f2)
+
+            if [ "$curr_network" -eq 1 ]; then
+                available_networks+=("$network_name (current)")
+            else
+                available_networks+=("$network_name")
+            fi
+
+            curr_network=0
+        done
+    } <<< "$scan_res"
+
+    scan_result=$(IFS=$'\n' ;echo "${available_networks[*]}")
+    kill "$placeholder_pid"
+
+    ssid=$(echo -e "$scan_result" | rofi -dmenu -i -p "network:")
+
+    if [ -z "$ssid" ]; then
+        return 0
+    fi
+
+    if ! grep -q " $ssid " <(nmcli dev wifi list); then
+        echo "$program: network not found: $ssid" >&2
+        exit 1
+    fi
+
+    connect "$ssid"
+}
+
+main() {
+    commands=()
+
+    wifi_status=$(nmcli --fields WIFI g | tail -n1)
+    if [ "${wifi_status%% *}" = "enabled" ]; then
+        commands+=("$cmd_turn_off_wifi" "$cmd_scan")
+    else
+        commands+=("$cmd_turn_on_wifi")
+    fi
+
+    cmd_menu_items=$(IFS=$'\n' ;echo "${commands[*]}")
+    cmd_selection=$(echo -e "$cmd_menu_items" | rofi -dmenu -i -p "command (type $cmd_exit to close):")
+
+    case "$cmd_selection" in
+        "$cmd_turn_on_wifi")
+            nmcli radio wifi on
+            ;;
+        "$cmd_turn_off_wifi")
+            nmcli radio wifi off
+            ;;
+        "$cmd_scan")
+            scan
+            ;;
+        "$cmd_exit")
+            exit 0
+            ;;
+        *)
+            ;;
+    esac
+
+    main
+}
+
+main
