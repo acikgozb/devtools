@@ -2,10 +2,10 @@
 
 set -euo pipefail
 
-program="power"
+program="rw-power"
 
 menu_items="Log out\nRestart\nKill"
-selection=$(echo -e "$menu_items" | rofi -dmenu -i)
+selection=$(echo -e "$menu_items" | rofi -dmenu -i -p "selection:")
 
 case "$selection" in
     "Log out")
