@@ -1,4 +1,4 @@
-# acikgozb-rofi
+# `rofi-wayland-scripts`
 
 This repository holds several helper scripts that uses `rofi-wayland` to have some kind of DE (Desktop Environment) functionality, such as:
 
