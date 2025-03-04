@@ -6,15 +6,16 @@ program="rw-wifi"
 
 cmd_turn_off_wifi="Turn off WiFi"
 cmd_turn_on_wifi="Turn on WiFi"
-cmd_scan="Connect to a network"
+cmd_connect="Connect to a network"
 cmd_exit="exit"
 
+signal_threshold_low=40
+signal_threshold_mid=60
+signal_threshold_high=80
 
 connect() {
     rofi -e "Connecting..." &
     conn_pid=$!
-    echo "$1"
-    echo "$conn_pid"
 
     if grep -q -e "^${1}$" <(nmcli -g NAME connection 2> /dev/null); then
         kill "$conn_pid"
@@ -47,42 +48,43 @@ scan() {
     rofi -e "Scanning available networks..." &
     placeholder_pid=$!
 
-    scan_res=$(nmcli dev wifi list)
-    {
-        available_networks=()
+    scan_res=$(nmcli -f SSID,Signal -t dev wifi list)
 
-        # First line contains headers.
-        read -r
+    available_networks=()
+    while read -r line; do
+        if grep -q "^:" <<< "$line"; then
+            continue
+        fi
 
-        curr_network=0
-        while read -r line; do
-            if grep -q "\--" <<< "$line"; then
-                continue
-            fi
+        IFS=':' read -r network_name signal <<< "$line"
 
-            if grep -q "\*" <<< "$line"; then
-                curr_network=1
-                read -r line <<< "${line/\*/ }"
-            fi
+        signal_pow=""
+        if [ "$signal" -lt "$signal_threshold_low" ]; then
+            signal_pow="(sig: <40)"
+        elif [ "$signal" -ge "$signal_threshold_low" ] && \
+            [ "$signal" -lt "$signal_threshold_mid" ]; then
+            signal_pow="(sig: <60)"
+        elif [ "$signal" -ge "$signal_threshold_mid" ] && \
+            [ "$signal" -lt "$signal_threshold_high" ]; then
+            signal_pow="(sig: <80)"
+        else
+            signal_pow="(sig: >80)"
+        fi
 
-            network_name=$(tr -s ' ' <<< "$line" | cut -d' ' -f2)
-
-            if [ "$curr_network" -eq 1 ]; then
-                available_networks+=("$network_name (current)")
-            else
-                available_networks+=("$network_name")
-            fi
-
-            curr_network=0
-        done
-    } <<< "$scan_res"
+        available_networks+=("$signal_pow $network_name")
+    done <<< "$scan_res"
 
     scan_result=$(IFS=$'\n' ;echo "${available_networks[*]}")
     kill "$placeholder_pid"
 
-    ssid=$(echo -e "$scan_result" | rofi -dmenu -i -p "network:")
+    ssid=$(echo -e "$scan_result" | rofi -dmenu -i -p "network (type scan to re-scan):")
 
     if [ -z "$ssid" ]; then
+        return 0
+    fi
+
+    if [ "$ssid" = "scan" ]; then
+        scan
         return 0
     fi
 
@@ -99,7 +101,7 @@ main() {
 
     wifi_status=$(nmcli --fields WIFI g | tail -n1)
     if [ "${wifi_status%% *}" = "enabled" ]; then
-        commands+=("$cmd_turn_off_wifi" "$cmd_scan")
+        commands+=("$cmd_turn_off_wifi" "$cmd_connect")
     else
         commands+=("$cmd_turn_on_wifi")
     fi
@@ -114,7 +116,7 @@ main() {
         "$cmd_turn_off_wifi")
             nmcli radio wifi off
             ;;
-        "$cmd_scan")
+        "$cmd_connect")
             scan
             ;;
         "$cmd_exit")
