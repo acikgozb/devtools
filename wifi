@@ -74,7 +74,7 @@ scan() {
         available_networks+=("$signal_pow $network_name")
     done <<< "$scan_res"
 
-    scan_result=$(IFS=$'\n' ;echo "${available_networks[*]}")
+    scan_result=$(IFS=$'\n' ;echo -e "${available_networks[*]}")
     kill "$placeholder_pid"
 
     ssid=$(echo -e "$scan_result" | rofi -dmenu -i -p "network (type scan to re-scan):")
@@ -88,12 +88,14 @@ scan() {
         return 0
     fi
 
-    if ! grep -q " $ssid " <(nmcli dev wifi list); then
-        echo "$program: network not found: $ssid" >&2
+    network_name="${ssid:11}"
+
+    if ! grep -q " $network_name " <(nmcli dev wifi list); then
+        echo "$program: network not found: $network_name" >&2
         exit 1
     fi
 
-    connect "$ssid"
+    connect "$network_name"
 }
 
 main() {
