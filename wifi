@@ -7,6 +7,7 @@ program="rw-wifi"
 cmd_turn_off_wifi="Turn off WiFi"
 cmd_turn_on_wifi="Turn on WiFi"
 cmd_connect="Connect to a network"
+cmd_disconnect="Disconnect from the network"
 cmd_exit="exit"
 
 signal_threshold_low=40
@@ -98,6 +99,17 @@ scan() {
     connect "$network_name"
 }
 
+disconnect() {
+    network_name="$1"
+    rofi -e "Disconnecting from the network ${network_name}..." &
+    placeholder_pid=$!
+
+    if nmcli connection down id "$network_name"; then
+        kill $placeholder_pid
+        return 0
+    fi
+}
+
 main() {
     commands=()
 
@@ -106,6 +118,11 @@ main() {
         commands+=("$cmd_turn_off_wifi" "$cmd_connect")
     else
         commands+=("$cmd_turn_on_wifi")
+    fi
+
+    active_network_name="$(nmcli -g NAME connection show --active | head -n1)"
+    if [[ "$active_network_name" != "lo" ]]; then
+        commands+=("$cmd_disconnect ($active_network_name)")
     fi
 
     cmd_menu_items=$(IFS=$'\n' ;echo "${commands[*]}")
@@ -120,6 +137,9 @@ main() {
             ;;
         "$cmd_connect")
             scan
+            ;;
+        "$cmd_disconnect"*)
+            disconnect "$active_network_name"
             ;;
         "$cmd_exit")
             exit 0
