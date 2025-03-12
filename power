@@ -5,9 +5,9 @@ set -euo pipefail
 program="rw-power"
 
 menu_items="Log out\nRestart\nKill"
-selection=$(echo -e "$menu_items" | rofi -dmenu -i -p "selection:")
+cmd=$(echo -e "$menu_items" | rofi -dmenu -i -p "selection:")
 
-case "$selection" in
+case "$cmd" in
     "Log out")
         loginctl terminate-user "$USER"
         ;;
@@ -18,6 +18,6 @@ case "$selection" in
         systemctl poweroff
         ;;
     *)
-        echo "$program: invalid option: $selection"
-        exit 0
+        echo "$program: invalid option: $cmd"
+        ;;
 esac
