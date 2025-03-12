@@ -136,7 +136,7 @@ main() {
     cmd_menu_items=$(IFS=$'\n' ;echo "${commands[*]}")
 
     cmd=""
-    if [ -z "$diag_message" ]; then
+    if [[ -z "$diag_message" ]]; then
         cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -i -p "command (type $cmd_exit to close):")
     else
         cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -mesg "$diag_message" -i -p "command (type $cmd_exit to close):")

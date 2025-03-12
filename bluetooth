@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+program="rw-bluetooth"
+
+# TODO: Add a command to show connected devices (non selectable).
+
+cmd_enable_bt="Enable bluetooth"
+cmd_disable_bt="Disable bluetooth"
+cmd_scan_dev="Scan devices"
+cmd_disconnect_dev="Disconnect from device(s)"
+cmd_exit="exit"
+
+diag_message=""
+
+connect() {
+    rofi -e "Connecting to $2..." &
+    placeholder_pid=$!
+
+    if ! bluetoothctl trust "$1" > /dev/null; then
+        diag_message="Failed to trust to device $2. Try again..."
+
+        kill "$placeholder_pid"
+        return 0
+    elif ! bluetoothctl connect "$1" > /dev/null; then
+        diag_message="Failed to connect to device $2. Try again..."
+
+        kill "$placeholder_pid"
+        return 0
+    fi
+
+    diag_message="Connected to the device: $2."
+
+    kill "$placeholder_pid"
+    return 0
+}
+
+scan() {
+    rofi -e "Scanning for devices..." &
+    placeholder_pid=$!
+
+    bluetoothctl --timeout 5 scan on > /dev/null
+
+    devices=()
+    addresses=()
+    while read -r line;
+    do
+        IFS=' ' read -r _ address dev_name <<< "$line"
+        if [ "${address//:/-}" != "$dev_name" ]; then
+            devices+=("$dev_name")
+            addresses+=("$address")
+        fi
+    done < <(bluetoothctl devices)
+    kill "$placeholder_pid"
+
+    dev_list=$(IFS=$'\n' ;echo "${devices[*]}")
+    selected_dev=$(echo -e "$dev_list" | rofi -dmenu -i -p "device (type scan to rescan): ")
+
+    if [[ -z "$selected_dev" ]]; then
+        diag_message="No device is selected to connect. Try again..."
+        return 0
+    fi
+
+    if [[ "$selected_dev" = "scan" ]]; then
+        scan
+        return 0
+    fi
+
+    if ! grep -q "$selected_dev" <<< "$dev_list"; then
+        diag_message="Selected device is not found: $selected_dev"
+        return 0
+    fi
+
+    selected_addr=""
+    for i in "${!devices[@]}"; do
+        if [[ "${devices[$i]}" = "$selected_dev" ]];then
+            selected_addr="${addresses[$i]}"
+            break
+        fi
+    done
+
+    connect "$selected_addr" "$selected_dev"
+}
+
+disconnect() {
+    devices=()
+    addresses=()
+    while read -r line; do
+        IFS=' ' read -r _ address dev_name <<< "$line"
+
+        devices+=("$dev_name")
+        addresses+=("$address")
+    done <<< "$1"
+
+    dev_list=$(IFS=$'\n' ;echo "${devices[*]}")
+    selected_dev=$(echo -e "$dev_list" | rofi -dmenu -i -p "device to disconnect: ")
+
+    if [[ -z "$selected_dev" ]]; then
+        diag_message="No device is selected to disconnect. Try again..."
+        return 0
+    fi
+
+    if ! grep -q "$selected_dev" <<< "$dev_list"; then
+        diag_message="Selected device is not found: $selected_dev. Try again..."
+        return 0
+    fi
+
+    selected_addr=""
+    for i in "${!devices[@]}"; do
+        if [[ "${devices[$i]}" = "$selected_dev" ]];then
+            selected_addr="${addresses[$i]}"
+            break
+        fi
+    done
+
+    if ! bluetoothctl disconnect "$selected_addr" > /dev/null; then
+        diag_message="Unable to disconnect from $selected_dev"
+    else
+        diag_message="Disconnected from $selected_dev."
+    fi
+
+    return 0
+}
+
+main() {
+    commands=()
+
+    if bluetoothctl -- show | grep -q 'PowerState: on'; then
+        commands+=("$cmd_disable_bt")
+    else
+        commands+=("$cmd_enable_bt")
+    fi
+
+    commands+=("$cmd_scan_dev")
+
+    connected_devices=$(bluetoothctl -- devices Connected)
+    if [ -n "$connected_devices" ]; then
+        commands+=("$cmd_disconnect_dev")
+    fi
+
+    cmd_menu_items=$(IFS=$'\n' ;echo "${commands[*]}")
+
+    if [[ -z "$diag_message" ]]; then
+        cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -i -p "command (type $cmd_exit to close):")
+    else
+        cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -mesg "$diag_message" -i -p "command (type $cmd_exit to close):")
+        diag_message=""
+    fi
+
+    case "$cmd" in
+        "$cmd_enable_bt")
+            bluetoothctl power on > /dev/null
+            diag_message="Bluetooth is enabled."
+            ;;
+        "$cmd_disable_bt")
+            bluetoothctl power off > /dev/null
+            diag_message="Bluetooth is disabled."
+            ;;
+        "$cmd_scan_dev")
+            scan
+            ;;
+        "$cmd_disconnect_dev")
+            disconnect "$connected_devices"
+            ;;
+        "$cmd_exit")
+            exit 0
+            ;;
+        *)
+            echo "$program: invalid option: $cmd"
+            ;;
+    esac
+
+    main
+}
+
+main
