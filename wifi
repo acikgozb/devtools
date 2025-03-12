@@ -4,6 +4,8 @@ set -euo pipefail
 
 program="rw-wifi"
 
+# TODO: Add a new command to remove a known network.
+
 cmd_turn_off_wifi="Turn off WiFi"
 cmd_turn_on_wifi="Turn on WiFi"
 cmd_connect="Connect to a network"
@@ -13,6 +15,8 @@ cmd_exit="exit"
 signal_threshold_low=40
 signal_threshold_mid=60
 signal_threshold_high=80
+
+diag_message=""
 
 connect() {
     rofi -e "Connecting..." &
@@ -24,10 +28,12 @@ connect() {
         rofi -e "Connecting to a known network..." &
         known_conn_pid=$!
 
-        if nmcli connection up id "$1"; then
-            kill "$known_conn_pid"
-            return 0
+        if ! nmcli connection up id "$1"; then
+            diag_message="Connection to the known network $1 has failed. Remove the known network and try again..."
         fi
+
+        kill "$known_conn_pid"
+        return 0
     fi
 
     kill "$conn_pid"
@@ -38,7 +44,7 @@ connect() {
     new_conn_pid=$!
 
     if ! nmcli device wifi connect "$1" password "$password"; then
-        echo "$program: could not connect to the network $1"
+        diag_message="Incorrect password for the network $1. Try again..."
     fi
 
     kill "$new_conn_pid"
@@ -92,8 +98,8 @@ scan() {
     network_name="${ssid:11}"
 
     if ! grep -q " $network_name " <(nmcli dev wifi list); then
-        echo "$program: network not found: $network_name" >&2
-        exit 1
+        diag_message="Network not found: $network_name"
+        return 0
     fi
 
     connect "$network_name"
@@ -104,10 +110,12 @@ disconnect() {
     rofi -e "Disconnecting from the network ${network_name}..." &
     placeholder_pid=$!
 
-    if nmcli connection down id "$network_name"; then
-        kill $placeholder_pid
-        return 0
+    if ! nmcli connection down id "$network_name"; then
+        diag_message="Failed to disconnect from the network $network_name. Try again..."
     fi
+
+    kill $placeholder_pid
+    return 0
 }
 
 main() {
@@ -126,9 +134,16 @@ main() {
     fi
 
     cmd_menu_items=$(IFS=$'\n' ;echo "${commands[*]}")
-    cmd_selection=$(echo -e "$cmd_menu_items" | rofi -dmenu -i -p "command (type $cmd_exit to close):")
 
-    case "$cmd_selection" in
+    cmd=""
+    if [ -z "$diag_message" ]; then
+        cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -i -p "command (type $cmd_exit to close):")
+    else
+        cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -mesg "$diag_message" -i -p "command (type $cmd_exit to close):")
+        diag_message=""
+    fi
+
+    case "$cmd" in
         "$cmd_turn_on_wifi")
             nmcli radio wifi on
             ;;
@@ -145,6 +160,7 @@ main() {
             exit 0
             ;;
         *)
+            diag_message="Invalid command provided: $cmd"
             ;;
     esac
 
