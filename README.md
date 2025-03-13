@@ -1,4 +1,4 @@
-# `devex-scripts`
+# `devx-scripts`
 
 Highly opinionated scripts to create a unique development environment and experience.
 Caters to people who prefer DIY over premade environments.
