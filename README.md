@@ -17,15 +17,15 @@ Please let me know how it goes.
 
 ### `fzfw`
 
-![fzfw](https://github.com/user-attachments/assets/d563ec74-f575-402f-8576-352bcac1a86a)
+<video src="https://github.com/user-attachments/assets/d563ec74-f575-402f-8576-352bcac1a86a"></video>
 
 ### `wifi`
 
-![wifi](https://github.com/user-attachments/assets/4f94b83a-36b5-4eb2-8c4e-a999335082d9)
+<video src="https://github.com/user-attachments/assets/4f94b83a-36b5-4eb2-8c4e-a999335082d9"></video>
 
 ### `bluetooth`
 
-![bt](https://github.com/user-attachments/assets/3b22d8ad-81cf-4d21-a569-1735cc44db67)
+<video src="https://github.com/user-attachments/assets/3b22d8ad-81cf-4d21-a569-1735cc44db67"></video>
 
 ### `power`
 
