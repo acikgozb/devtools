@@ -5,12 +5,14 @@ set -euo pipefail
 program="rw-bluetooth"
 
 # TODO: Add a command to show connected devices (non selectable).
+# TODO: During scan, make sure to show the devices that are trusted before.
 
 cmd_enable_bt="Enable bluetooth"
 cmd_disable_bt="Disable bluetooth"
 cmd_scan_dev="Scan devices"
 cmd_disconnect_dev="Disconnect from device(s)"
 cmd_exit="exit"
+cmd_rescan="scan"
 
 diag_message=""
 
@@ -40,22 +42,30 @@ scan() {
     rofi -e "Scanning for devices..." &
     placeholder_pid=$!
 
-    bluetoothctl --timeout 5 scan on > /dev/null
-
     devices=()
     addresses=()
     while read -r line;
     do
-        IFS=' ' read -r _ address dev_name <<< "$line"
+        if ! grep -q "NEW" <<< "$line"; then
+            continue
+        fi
+
+        IFS=' ' read -r _ _ address dev_name <<< "$line"
         if [ "${address//:/-}" != "$dev_name" ]; then
             devices+=("$dev_name")
             addresses+=("$address")
         fi
-    done < <(bluetoothctl devices)
+    done < <(bluetoothctl --timeout 5 scan on)
     kill "$placeholder_pid"
 
     dev_list=$(IFS=$'\n' ;echo "${devices[*]}")
-    selected_dev=$(echo -e "$dev_list" | rofi -dmenu -i -p "device (type scan to rescan): ")
+
+    if [[ -z "$dev_list" ]]; then
+        diag_message="Could not find any device to connect. Try again..."
+        return 0
+    fi
+
+    selected_dev=$(echo -e "$dev_list" | rofi -dmenu -i -p "device ($cmd_rescan: rescan, esc: exit): ")
 
     if [[ -z "$selected_dev" ]]; then
         diag_message="No device is selected to connect. Try again..."
@@ -126,9 +136,12 @@ disconnect() {
 main() {
     commands=()
 
+    bt_status_message=""
     if bluetoothctl -- show | grep -q 'PowerState: on'; then
+        bt_status_message="status: enabled"
         commands+=("$cmd_disable_bt")
     else
+        bt_status_message="status: disabled"
         commands+=("$cmd_enable_bt")
     fi
 
@@ -141,21 +154,16 @@ main() {
 
     cmd_menu_items=$(IFS=$'\n' ;echo "${commands[*]}")
 
-    if [[ -z "$diag_message" ]]; then
-        cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -i -p "command (type $cmd_exit to close):")
-    else
-        cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -mesg "$diag_message" -i -p "command (type $cmd_exit to close):")
-        diag_message=""
-    fi
+    main_menu_message=$( ([[ -z "$diag_message" ]] && echo "$bt_status_message") || echo "$bt_status_message&#x0a;$diag_message" )
+    diag_message=""
+    cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -mesg "$main_menu_message" -i -p "command ($cmd_exit or esc to exit):")
 
     case "$cmd" in
         "$cmd_enable_bt")
             bluetoothctl power on > /dev/null
-            diag_message="Bluetooth is enabled."
             ;;
         "$cmd_disable_bt")
             bluetoothctl power off > /dev/null
-            diag_message="Bluetooth is disabled."
             ;;
         "$cmd_scan_dev")
             scan

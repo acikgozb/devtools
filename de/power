@@ -2,19 +2,23 @@
 
 set -euo pipefail
 
+cmd_logout="Log out"
+cmd_restart="Restart"
+cmd_shutdown="Kill"
+
 program="rw-power"
 
-menu_items="Log out\nRestart\nKill"
-cmd=$(echo -e "$menu_items" | rofi -dmenu -i -p "selection:")
+menu_items="$cmd_logout\n$cmd_restart\n$cmd_shutdown"
+cmd=$(echo -e "$menu_items" | rofi -dmenu -i -p "selection (esc to exit):")
 
 case "$cmd" in
-    "Log out")
+    "$cmd_logout")
         loginctl terminate-user "$USER"
         ;;
-    "Restart")
+    "$cmd_restart")
         systemctl reboot
         ;;
-    "Kill")
+    "$cmd_shutdown")
         systemctl poweroff
         ;;
     *)

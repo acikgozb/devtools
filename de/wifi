@@ -11,6 +11,7 @@ cmd_turn_on_wifi="Turn on WiFi"
 cmd_connect="Connect to a network"
 cmd_disconnect="Disconnect from the network"
 cmd_exit="exit"
+cmd_rescan="scan"
 
 signal_threshold_low=40
 signal_threshold_mid=60
@@ -30,6 +31,8 @@ connect() {
 
         if ! nmcli connection up id "$1"; then
             diag_message="Connection to the known network $1 has failed. Remove the known network and try again..."
+        else
+            diag_message="Connected to the known network $1."
         fi
 
         kill "$known_conn_pid"
@@ -38,13 +41,15 @@ connect() {
 
     kill "$conn_pid"
 
-    password=$(rofi -dmenu -p "password:")
+    password=$(rofi -dmenu -p "password (esc: exit):")
 
     rofi -e "Connecting to a new network..." &
     new_conn_pid=$!
 
     if ! nmcli device wifi connect "$1" password "$password"; then
         diag_message="Incorrect password for the network $1. Try again..."
+    else
+        diag_message="Connected to the network $1."
     fi
 
     kill "$new_conn_pid"
@@ -58,12 +63,10 @@ scan() {
     scan_res=$(nmcli -f SSID,Signal -t dev wifi list)
 
     available_networks=()
-    while read -r line; do
-        if grep -q "^:" <<< "$line"; then
+    while IFS=':' read -r network_name signal; do
+        if [[ -z "$network_name" ]]; then
             continue
         fi
-
-        IFS=':' read -r network_name signal <<< "$line"
 
         signal_pow=""
         if [ "$signal" -lt "$signal_threshold_low" ]; then
@@ -84,7 +87,7 @@ scan() {
     scan_result=$(IFS=$'\n' ;echo -e "${available_networks[*]}")
     kill "$placeholder_pid"
 
-    ssid=$(echo -e "$scan_result" | rofi -dmenu -i -p "network (type scan to re-scan):")
+    ssid=$(echo -e "$scan_result" | rofi -dmenu -i -p "network ($cmd_rescan: rescan, esc: exit):")
 
     if [ -z "$ssid" ]; then
         return 0
@@ -112,6 +115,8 @@ disconnect() {
 
     if ! nmcli connection down id "$network_name"; then
         diag_message="Failed to disconnect from the network $network_name. Try again..."
+    else
+        diag_message="Disconnected from the network $network_name."
     fi
 
     kill $placeholder_pid
@@ -122,9 +127,12 @@ main() {
     commands=()
 
     wifi_status=$(nmcli --fields WIFI g | tail -n1)
+    wifi_status_message=""
     if [ "${wifi_status%% *}" = "enabled" ]; then
+        wifi_status_message="status: enabled"
         commands+=("$cmd_turn_off_wifi" "$cmd_connect")
     else
+        wifi_status_message="status: disabled"
         commands+=("$cmd_turn_on_wifi")
     fi
 
@@ -135,13 +143,9 @@ main() {
 
     cmd_menu_items=$(IFS=$'\n' ;echo "${commands[*]}")
 
-    cmd=""
-    if [[ -z "$diag_message" ]]; then
-        cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -i -p "command (type $cmd_exit to close):")
-    else
-        cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -mesg "$diag_message" -i -p "command (type $cmd_exit to close):")
-        diag_message=""
-    fi
+    main_menu_message=$( ([[ -z "$diag_message" ]] && echo "$wifi_status_message") || echo "$wifi_status_message&#x0a;$diag_message" )
+    diag_message=""
+    cmd=$(echo -e "$cmd_menu_items" | rofi -dmenu -mesg "$main_menu_message" -i -p "command ($cmd_exit or esc to exit):")
 
     case "$cmd" in
         "$cmd_turn_on_wifi")
