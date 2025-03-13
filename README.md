@@ -17,22 +17,22 @@ Please let me know how it goes.
 
 <details>
     <summary>`fzfw`</summary>
-    <img src="./assets/fzfw-demo.mp4"/>
+    ![fzfw-demo](./assets/fzfw-demo.mp4?raw=true)
 </details>
 
 <details>
     <summary>`wifi`</summary>
-    <img src="./assets/wifi-demo.mp4"/>
+    ![wifi-demo](./assets/wifi-demo.mp4?raw=true)
 </details>
 
 <details>
     <summary>`bluetooth`</summary>
-    <img src="./assets/bt-demo.mp4"/>
+    ![bt-demo](./assets/bt-demo.mp4?raw=true)
 </details>
 
 <details>
     <summary>`power`</summary>
-    <img src="./assets/power-ss.png"/>
+    ![power-ss.png](./assets/power-ss.png?raw=true)
 </details>
 
 ## Installation
