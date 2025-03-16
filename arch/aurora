@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+program="aurora"
+
+install_cmd="install"
+aur_repo="git@github.com:archlinux/aur.git"
+
+# TODO: Implement package update and removal.
+
+acquire_key() {
+    imported=0
+    for sig_file in $1; do
+        if gpg --keyserver-options auto-key-retrieve --verify "$sig_file"; then
+            imported=1
+            break
+        fi
+    done
+
+    if [[ "$imported" -eq 0 ]]; then
+        echo "$program: failed to acquire the PGP key for the package. Aborting the installation." >&2
+        exit 1
+    fi
+}
+
+install() {
+    for pkg in "$@"; do
+        pkg_path="$HOME/lib/aur/$pkg"
+        if [[ -d "$pkg_path" ]]; then
+            echo "$program: the path $pkg_path already exists, removing the previous directory first."
+            rm -rf "$pkg_path"
+        fi
+
+        echo "$program: cloning $pkg from $aur_repo under $pkg_path..."
+        git clone --single-branch --branch "$pkg" "$aur_repo" "$pkg_path"
+
+        echo "$program: building the package via makepkg."
+        makepkg -D "$pkg_path" -sC
+        echo "$program: the package $pkg is built successfully."
+
+        sig_files=$(find "$pkg_path" -name '*.sig' -or -name '*.asc')
+        if [[ -n "$sig_files" ]]; then
+            echo -e "$program: found signature files:\n$1\nattempting to acquire the PGP key for the package $pkg before proceeding."
+            acquire_key "$sig_files"
+            echo "$program: the PGP key is acquired for the package $pkg, proceeding to the installation."
+        fi
+
+        echo "$program: installing the package via makepkg."
+        makepkg -D "$pkg_path" -sirc
+        echo "$program: $pkg is installed to the system successfully."
+    done
+}
+
+main() {
+    cmd="$1"
+
+    case "$cmd" in
+        "$install_cmd")
+            shift
+            install "$@"
+            ;;
+        *)
+            echo "$program: command $cmd is not supported" >&2
+            exit 1
+    esac
+}
+
+main "$@"
