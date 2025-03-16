@@ -7,7 +7,7 @@ The scripts are primarily designed for Arch Linux hosts, but most of them should
 
 ## Disclaimer
 
-These scripts are written for my own taste and that is why most of them are intentionally non customizable to keep things as simple as possible.
+These scripts are written for my own taste and that is why most of them are intentionally kept non customizable.
 The main goal of this repository is to help inspire others just as how I took inspiration.
 Sharing is caring, right?
 
