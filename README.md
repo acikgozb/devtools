@@ -1,14 +1,15 @@
 # `devx-scripts`
 
-Highly opinionated scripts to create a unique development environment and experience.
+Highly experimental and opinionated scripts that are used to create a unique development environment and experience.
 Caters to people who prefer DIY over premade environments.
 
-The scripts are primarily designed to be used by Linux hosts.
-Arch Linux is the main supported Linux distribution.
+The scripts are primarily designed for Arch Linux hosts, but most of them should work in pretty much all Linux distributions (excluding the scripts under `arch` directory).
 
 ## Disclaimer
 
-Since these scripts are highly opinionated for my own taste, it is probably better for you to take inspiration instead and implement the functionality by yourself.
+These scripts are written for my own taste and that is why most of them are intentionally non customizable to keep things as simple as possible.
+The main goal of this repository is to help inspire others just as how I took inspiration.
+Sharing is caring, right?
 
 If you still wish to use these scripts though, by all means go ahead!
 Please let me know how it goes.
@@ -41,28 +42,42 @@ Please let me know how it goes.
 
 ## Installation
 
-The installation consists of two parts:
+Here are the steps to install any script in this repository:
 
-- Installing the required dependencies (1),
-- Putting the script under `$PATH` (2).
+- Installing the required dependencies (1).
+- Cloning this repository (2).
+- Putting the script under `$PATH` (3).
 
 (1) The dependencies are listed in the `README` that covers each script.
 If you wish to install, please read the docs first to see which dependencies you need:
 
 - [tmux scripts](./tmux/README.md)
 - [Desktop environment scripts](./de/README.md)
+- [Arch Linux scripts](./arch/README.md)
 
-(2) In order to run the scripts without specifying its full path, they need to be under one of the directories listed in `$PATH`.
-To see whether the scripts can be found via `$PATH` lookup or not, you can use `which`:
+If you miss some of the dependencies, install them with the package manager of your choice.
+
+(2) Next, clone the repository to the place you want.
 
 ```bash
-# Assume that `wifi` script is installed.
-script_name="wifi"
-# Assume "$HOME/bin" is in "$PATH".
-installed_script_path="$HOME/bin"
-
-# Ensure that `which` outputs the full path of the installed script, as shown in the example below.
-which "$script_name" # /home/username/bin/wifi
+git clone git@github.com:acikgozb/devx-scripts.git /repo/clone/path
 ```
 
-Once `$PATH` lookup works, you can reference the script in anywhere you want and start using as you wish.
+(3) In order to run the scripts without specifying its full path, they need to be under one of the directories listed in `$PATH`.
+I'd recommend symlinking the scripts under a directory listed in `$PATH` to not deal with copying them on each update or to keep `$PATH` clean:
+
+```bash
+# Change to a directory under $PATH.
+cd /dir/under/path
+
+# Create a soft link with either the default name or a custom one.
+ln -s ../rel/path/to/the/script ./script-name
+
+# Check if the script can be picked up via a $PATH lookup.
+which script-name  # /dir/under/path/script-name
+
+# If the full path of the script can be seen with `which`,
+# you can reference the script in anywhere you want and
+# start using as you wish.
+script-name
+```
