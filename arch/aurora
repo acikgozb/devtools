@@ -7,6 +7,8 @@ program="aurora"
 install_cmd="install"
 aur_repo="git@github.com:archlinux/aur.git"
 
+pkg_lib_path="${AURORA_LIB_PATH:-$HOME/.local/lib}"
+
 # TODO: Implement package update and removal.
 
 acquire_key() {
@@ -19,16 +21,21 @@ acquire_key() {
     done
 
     if [[ "$imported" -eq 0 ]]; then
-        echo "$program: failed to acquire the PGP key for the package. Aborting the installation." >&2
+        echo "$program: failed to acquire the PGP key for the package, aborting the installation." >&2
         exit 1
     fi
 }
 
 install() {
+    if [[ ! -d "$pkg_lib_path" ]]; then
+        echo "$program: the path $pkg_lib_path does not exist, the directory will be created before the installation."
+        mkdir -p "$pkg_lib_path"
+    fi
+
     for pkg in "$@"; do
-        pkg_path="$HOME/lib/aur/$pkg"
+        pkg_path="$pkg_lib_path/$pkg"
         if [[ -d "$pkg_path" ]]; then
-            echo "$program: the path $pkg_path already exists, removing the previous directory first."
+            echo "$program: the path $pkg_path already exists, the previous directory will be removed."
             rm -rf "$pkg_path"
         fi
 
