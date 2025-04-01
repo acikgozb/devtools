@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+program="fzjt"
+
+zellij_session=${ZELLIJ_SESSION_NAME:-}
+if [[ -z "$zellij_session" ]]; then
+  echo "$program: unable to find the active zellij session." >&2
+  exit 1
+fi
+
+path_to_search="$HOME/$zellij_session"
+selected_path=$(fd . "$path_to_search" --hidden -d 1 --type d | fzf)
+tab_name=$(echo "$selected_path" | awk -F "/" '{ if ($NF==""){print $(NF-1)}; if($NF!=""){print $NF} }')
+
+zellij ac new-tab -n "$tab_name" -c "$selected_path" -l "default"

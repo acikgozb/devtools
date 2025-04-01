@@ -52,6 +52,7 @@ Here are the steps to install any script in this repository:
 If you wish to install, please read the docs first to see which dependencies you need:
 
 - [tmux scripts](./tmux/README.md)
+- [Zellij scripts](./zellij/README.md)
 - [Desktop environment scripts](./de/README.md)
 - [Arch Linux scripts](./arch/README.md)
 
