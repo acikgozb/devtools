@@ -31,7 +31,7 @@ zellij -s personal
 # User attaches to the session "work" to deal with work projects.
 zellij a work
 
-# Using fzfw in the work session allows the user to search any directory that belongs "to $HOME/work".
+# Using fzjt in the work session allows the user to search any directory that belongs "to $HOME/work".
 # Notice how the project directories created under "$HOME/personal" are not shown in the list.
 fzjt
 # "$HOME/work/project1"
@@ -39,7 +39,7 @@ fzjt
 # "$HOME/work/project3"
 # "$HOME/work/project4"
 
-# Selecting project4 from the list provided by fzfw above.
+# Selecting project4 from the list provided by fzjt above.
 selected_dir="$HOME/work/project4"
 
 # fzjt opens project4 in a new window, titled "project4".
