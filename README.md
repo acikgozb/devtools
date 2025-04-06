@@ -1,4 +1,4 @@
-# `devx-scripts`
+# `devtools`
 
 Highly experimental and opinionated scripts that are used to create a unique development environment and experience.
 Caters to people who prefer DIY over premade environments.
@@ -61,7 +61,7 @@ If you miss some of the dependencies, install them with the package manager of y
 (2) Next, clone the repository to the place you want.
 
 ```bash
-git clone git@github.com:acikgozb/devx-scripts.git /repo/clone/path
+git clone git@github.com:acikgozb/devtools.git /repo/clone/path
 ```
 
 (3) In order to run the scripts without specifying its full path, they need to be under one of the directories listed in `$PATH`.
