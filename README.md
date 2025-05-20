@@ -7,11 +7,21 @@ The scripts are primarily designed for Arch Linux hosts, but most of them should
 
 ## Disclaimer
 
-These scripts are written for my own taste and that is why most of them are intentionally kept non customizable.
-The main goal of this repository is to help inspire others just as how I took inspiration.
+There are some important facts about these scripts which should be mentioned before moving on:
+
+- This repository is thought as a playground, so most of the scripts are at PoC stage, meaning that they are intentionally kept non customizable.
+Basically, I try to fix my problem as fast as possible in here, and then create a separate version for each which extends the functionality with a better structure to iterate upon.
+
+- The non PoC version of these scripts can be found below:
+    - [`hpm` (for `power`)](https://github.com/acikgozb/hpm)
+    - [`wl` (for `wifi`)](https://github.com/acikgozb/wl)
+
+- The scripts are designed for my own needs, so some of them might not fit your use cases.
+
+Overall, the main goal of this repository is to help inspire others just as how I took inspiration.
 Sharing is caring, right?
 
-If you still wish to use these scripts though, by all means go ahead!
+If you still wish to use these PoC scripts though, by all means go ahead!
 Please let me know how it goes.
 
 ## Demos
